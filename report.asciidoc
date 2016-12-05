@@ -1,0 +1,35 @@
+= Smart Speed Cameras: [CSC8110] Cloud Computing
+Pedro Silva <p.pinto-da-silva2@newcastle.ac.uk>
+16-12-2016
+
+== System Design
+
+As suggested in the coursework document, I took on this challenge
+not only to discover how we can achieve
+cloud computing using Azure, but also to explore new software tools and
+programming languages.
+Although I've previously worked with _python_, I was still
+unfamiliar with how packaging, testing and development is accomplished
+in a continuous, collaborative and systematic way.
+Therefore, I chose to carry out this project using _python_ to understand
+how project directories should be organized, the convention when it comes
+to naming directories, source and test files, find out the equivalent build tool
+of Maven for _python_, how to publish a library, etc.
+
+To that extent we introduce the following technologies:
+
+* *GitHub*: Open-source project repository with versioning tools.
+* *Travis CI*: Provides continuous integration on top of Github projects, i.e. on
+successful pushes to the remote repository (Github) a build is triggered on a fresh containerized
+environment (within Travis' public cloud) which installs your project and runs
+the entire set of test suites.
+* *Virtualenv*: Used to provide separation between python projects being developed on the same machine, which
+may have different or even conflicting requirements.
+* *Setuptools*: Used to package your python project/library so that it can be transferred
+and installed easily in other computers.
+* *Py.test*: 
+* *Sphinx*:
+
+
+
+== Pipeline

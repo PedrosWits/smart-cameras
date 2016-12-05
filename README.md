@@ -1,1 +1,1 @@
-# smart-cameras
+# Smart Cities: Speed Cameras#### *CSC8110 - Cloud Computing Coursework @*#### *Newcastle University*----## Pipeline Setup*Pedro Pinto da Silva*
