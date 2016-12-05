@@ -27,9 +27,13 @@ the entire set of test suites.
 may have different or even conflicting requirements.
 * *Setuptools*: Used to package your python project/library so that it can be transferred
 and installed easily in other computers.
-* *Py.test*: 
-* *Sphinx*:
+* *Py.test*: Tool for automated testing.
+* *Sphinx with autodoc*: Generates documentation for your project in similar fashion to javadoc.
 
-
+I start by setting up the project layout and skeleton, as well as configuring most of these tools
+so that I can then concentrate solely on the programming tasks.
+Most of my decisions were derived from the suggestions given by
+https://www.jeffknupp.com/blog/2013/08/16/open-sourcing-a-python-project-the-right-way/[Jeff Knupp]
+on a blog post entitled "Open Sourcing a Python Project the Right Way".
 
 == Pipeline
