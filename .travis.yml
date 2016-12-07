@@ -7,7 +7,8 @@ script:
     - py.test --cov=smart-cameras smart-cameras
 
 after_sucess:
-  - CODECLIMATE_REPO_TOKEN=<461901934eff0394becbfe17ff061cf94508dd7c0fe429a5c6c291cb6395db6b> codeclimate-test-reporter
+  - CODECLIMATE_REPO_TOKEN=461901934eff0394becbfe17ff061cf94508dd7c0fe429a5c6c291cb6395db6b 
+    codeclimate-test-reporter --file .coverage
 
 addons:
     code_climate:
