@@ -1,7 +1,7 @@
 from azure.storage.table import TableService, Entity
 
-mykey = "uk/kCVQbU+52lixEtQFw0Xjk5XkC2RYzJ8BzBG22i2x3XfrIVBs1HgyBOO1csaf3ozG34Arj6Z+0kZcN0nEMiw=="
-acc_name = "smartcamerasdisks221"
+mykey = "umh7XfkHhN05Blx7+LltNoSZ8xr6qD7l5dJZ44LRJH6YoQ4sWvQ6D2lyl31h3RfOBS/YWdtUN5ZseAKTnSctpg=="
+acc_name = "smartcamerasdiag952"
 
 table_service = TableService(account_name=acc_name, account_key=mykey)
 table_service.create_table('tasktable')
