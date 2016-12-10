@@ -3,3 +3,6 @@ pytest-cov==2.4.0
 Sphinx==1.5
 azure==2.0.0rc6
 codeclimate-test-reporter==0.2.0
+configobj==5.0.6
+pyzmq==16.0.2
+zmq==0.0.0
