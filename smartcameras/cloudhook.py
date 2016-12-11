@@ -16,15 +16,14 @@ class CloudHook(object):
     def setupHook(self, serviceKeyValues):
         pass
 
-    @abstractmethod
-    def publish(self, to, args):
-        pass
-
-    @abstractmethod
-    def subscribe(self, to, args):
-        pass
-
-
-    @abstractmethod
-    def sendMessage(self, to, message):
-        pass
+    # @abstractmethod
+    # def publish(self, to, args):
+    #     pass
+    #
+    # @abstractmethod
+    # def subscribe(self, to, args):
+    #     pass
+    #
+    # @abstractmethod
+    # def sendMessage(self, to, args):
+    #     pass
