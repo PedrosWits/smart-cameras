@@ -1,6 +1,7 @@
 import numpy as np
 import string
 import random
+import json
 
 VehicleType = ["CAR", "TRUCK", "MOTORCYCLE"]
 
@@ -26,6 +27,20 @@ class NormalVehicle(object):
         print "License plate =" , self.plate
         print "Type =" , self.type
         print "Speed =" , self.speed
+
+    def toJson(self):
+        return json.dumps({"plate" : self.plate,
+                           "type"  : self.type,
+                           "speed" : self.speed},
+                           indent = 4, sort_keys = False)
+
+def vehicleFromJson(json_string):
+    return json.loads(json_string, object_hook=asVehicle)
+
+def asVehicle(dic):
+    vehicle = NormalVehicle()
+    vehicle.__dict__.update(dic)
+    return vehicle
 
 def genNumber():
     return random.choice(string.digits)
