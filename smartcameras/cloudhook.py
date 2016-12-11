@@ -16,14 +16,30 @@ class CloudHook(object):
     def setupHook(self, serviceKeyValues):
         pass
 
-    # @abstractmethod
-    # def publish(self, to, args):
-    #     pass
-    #
-    # @abstractmethod
-    # def subscribe(self, to, args):
-    #     pass
-    #
-    # @abstractmethod
-    # def sendMessage(self, to, args):
-    #     pass
+    @abstractmethod
+    def createQueue(self, queueName):
+        pass
+
+    @abstractmethod
+    def sendQueueMessage(self, queueName, messageBody):
+        pass
+
+    @abstractmethod
+    def receiveQueueMessage(self, queueName):
+        pass
+
+    @abstractmethod
+    def createTopic(self, topicName):
+        pass
+
+    @abstractmethod
+    def publish(self, topicName, messageBody):
+        pass
+
+    @abstractmethod
+    def subscribe(self, topicName, sfilter):
+        pass
+
+    @abstractmethod
+    def getMessage(self, topicName, sfilter):
+        pass

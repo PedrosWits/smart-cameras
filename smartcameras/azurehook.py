@@ -19,14 +19,6 @@ class AzureHook(CloudHook):
             shared_access_key_name = kv['shared_access_key_name'],
             shared_access_key_value = kv['shared_access_key_value'])
 
-
-## A wrapper class for azure queue
-class AzureQueue(AzureHook):
-
-    def __init__(self, serviceKeyValues = middle_earth):
-        # Call super class constructor
-        AzureHook.__init__(self, serviceKeyValues)
-
     def createQueue(self, queueName, queueOptions = None):
         if queueOptions is None:
             queueOptions = Queue()
@@ -34,19 +26,11 @@ class AzureQueue(AzureHook):
             queueOptions.default_message_time_to_live = 'PT1M'
         self.serviceBus.create_queue(queueName, queueOptions)
 
-    def sendMessage(self, queueName, messageBody):
+    def sendQueueMessage(self, queueName, messageBody):
         self.serviceBus.send_queue_message(queueName, Message(messageBody))
 
-    def receiveMessage(self, queueName, peek_lock=False):
+    def receiveQueueMessage(self, queueName, peek_lock=False):
         return self.serviceBus.receive_queue_message(queueName, peek_lock)
-
-
-## A wrapper class that represents an azure publisher
-class AzurePublisher(AzureHook):
-
-    def __init__(self, serviceKeyValues = middle_earth):
-        # Call super class constructor
-        AzureHook.__init__(self, serviceKeyValues)
 
     def createTopic(self, topicName, topicOptions = None):
         if topicOptions is None:
@@ -55,16 +39,8 @@ class AzurePublisher(AzureHook):
             topicOptions.default_message_time_to_live = 'PT1M'
         self.serviceBus.create_topic(topicName, topicOptions)
 
-    def publish(self, topic, messageBody):
-        message = Message(messageBody)
-        self.serviceBus.send_topic_message(topic, message)
-
-## A wrapper class that represents an azure subscriber
-class AzureSubscriber(AzureHook):
-
-    def __init__(self, serviceKeyValues = middle_earth):
-        # Call super class constructor
-        AzureHook.__init__(self, serviceKeyValues)
+    def publish(self, topicName, messageBody):
+        self.serviceBus.send_topic_message(topicName, Message(messageBody))
 
     def subscribe(self, topicName, sfilter = 'AllMessages'):
         self.serviceBus.create_subscription(topicName, sfilter)
