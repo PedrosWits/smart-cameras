@@ -26,7 +26,7 @@ def test_activity_with_threads():
     t = threading.Thread(target=camera.activate, args=(50, 5))
     t.start()
     time.sleep(5)
-    assert camera.isActivated == True
+    assert camera.isActive == True
     camera.deactivate()
     t.join()
-    assert camera.isActivated == False
+    assert camera.isActive == False
