@@ -2,6 +2,7 @@ import threading
 from smartcameras.speedcamera import SpeedCamera
 import smartcameras.speedcamera as speedcamera
 import time
+import json
 
 def test_constructor():
     camera = SpeedCamera("Blandford Square", "Newcastle")
@@ -26,14 +27,59 @@ def test_activity_with_threads():
     t = threading.Thread(target=camera.activate, args=(50, 5))
     t.start()
     time.sleep(5)
-    assert camera.isActive == True
+    assert camera.isActive
     # print(camera.toJson())
     camera.deactivate()
     t.join()
-    assert camera.isActive == False
+    assert not camera.isActive
     # print(camera.toJson())
 
-# def test_pub_sub():
-#     camera = SpeedCamera("Blandford Square", "Newcastle")
-#     thread = speedcamera.activateInNewThread(camera, 50, 5)
-    
+def test_pub_sub():
+    test_subscription = "TEST_PUB_SUB"
+    camera = SpeedCamera("Blandford Square", "Newcastle")
+
+    if test_subscription in camera.cloudhook.serviceBus.list_subscriptions(camera.TOPIC_CAMERA):
+        camera.cloudhook.serviceBus.delete_subscription(camera.TOPIC_CAMERA, test_subscription)
+    if test_subscription in camera.cloudhook.serviceBus.list_subscriptions(camera.TOPIC_CAMERA):
+        camera.cloudhook.serviceBus.delete_subscription(camera.TOPIC_VEHICLE, test_subscription)
+
+    camera.cloudhook.subscribe(camera.TOPIC_CAMERA, test_subscription)
+    camera.cloudhook.subscribe(camera.TOPIC_VEHICLE, test_subscription)
+
+    thread = speedcamera.activateInNewThread(camera, 50, 1)
+    assert camera.isActive
+
+    camera_msg = camera.cloudhook.getMessage(camera.TOPIC_CAMERA, test_subscription, timeout='5')
+    msg_dict_values = json.loads(camera_msg.body).values()
+    assert camera.id in msg_dict_values
+    assert camera.city in msg_dict_values
+    assert camera.street in msg_dict_values
+    assert str(camera.datetime) in msg_dict_values
+    assert camera.rate in msg_dict_values
+    assert camera.speedLimit in msg_dict_values
+    # print(camera_msg.body)
+
+    vehicle_msg = camera.cloudhook.getMessage(camera.TOPIC_VEHICLE, test_subscription, timeout='5')
+    assert 'camera' in vehicle_msg.body
+    assert 'vehicle' in vehicle_msg.body
+    msg_camera_dict_values = json.loads(vehicle_msg.body)['camera'].values()
+    msg_vehicle_dict_keys = json.loads(vehicle_msg.body)['vehicle'].keys()
+    assert camera.id in msg_camera_dict_values
+    assert camera.city in msg_camera_dict_values
+    assert camera.street in msg_camera_dict_values
+    assert str(camera.datetime) in msg_camera_dict_values
+    assert camera.rate in msg_camera_dict_values
+    assert camera.speedLimit in msg_camera_dict_values
+    assert "plate" in msg_vehicle_dict_keys
+    assert "speed" in msg_vehicle_dict_keys
+    assert "type" in msg_vehicle_dict_keys
+    # print(vehicle_msg.body)
+
+    camera.deactivate()
+    thread.join()
+    assert not camera.isActive
+
+    camera.cloudhook.serviceBus.delete_subscription(camera.TOPIC_VEHICLE, test_subscription)
+    camera.cloudhook.serviceBus.delete_subscription(camera.TOPIC_CAMERA, test_subscription)
+    assert test_subscription not in camera.cloudhook.serviceBus.list_subscriptions(camera.TOPIC_CAMERA)
+    assert test_subscription not in camera.cloudhook.serviceBus.list_subscriptions(camera.TOPIC_VEHICLE)

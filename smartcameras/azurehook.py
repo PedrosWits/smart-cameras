@@ -42,8 +42,9 @@ class AzureHook(CloudHook):
     def publish(self, topicName, messageBody):
         self.serviceBus.send_topic_message(topicName, Message(messageBody))
 
-    def subscribe(self, topicName, sfilter = 'AllMessages'):
-        self.serviceBus.create_subscription(topicName, sfilter)
+    def subscribe(self, topicName, subscriptionName):
+        self.serviceBus.create_subscription(topicName, subscriptionName)
 
-    def getMessage(self, topicName, sfilter = 'AllMessages'):
-        return self.serviceBus.receive_subscription_message(topicName, sfilter)
+    def getMessage(self, topicName, subscriptionName, peek_lock = False, timeout = '60'):
+        return self.serviceBus.receive_subscription_message(topicName, subscriptionName,
+                                                            peek_lock = peek_lock, timeout = timeout)

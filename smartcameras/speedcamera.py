@@ -10,8 +10,6 @@ import json
 class SpeedCamera(object):
     TOPIC_CAMERA = "SpeedCamera"
     TOPIC_VEHICLE = "Vehicle"
-    FILTER_CAMERA_ACTIVATED = "Activated"
-    FILTER_CAMERA_DEACTIVATED = "Deactivated"
 
     def __init__(self, street, city, cloudhook = None, name = None):
         self.id = str(uuid.uuid4())
@@ -64,7 +62,7 @@ class SpeedCamera(object):
                 "city"       : self.city,
                 "rate"       : self.rate,
                 "speedLimit" : self.speedLimit,
-                "isActive"   : self.isActive,
+                "isActive"   : str(self.isActive),
                 "last_activation" : str(self.datetime)}
     def toJson(self):
         return json.dumps(self.toDict(), indent = 4, sort_keys = True)
@@ -77,32 +75,23 @@ class SpeedCamera(object):
         return np.random.exponential(1./self.rate)
 
     def __notifyCloudOfSelf(self):
-        return
         self.cloudhook.publish(self.TOPIC_CAMERA, self.toJson())
 
     def __notifyCloudOfVehicle(self, vehicle):
-        return
         messageBody = json.dumps({'vehicle' : vehicle.toDict(),
                                   'camera'  : self.toDict()},
                                  indent = 4, sort_keys = True)
-        self.cloudhook.publish(self.TOPIC_CAMERA, messageBody)
+        self.cloudhook.publish(self.TOPIC_VEHICLE, messageBody)
 
     def __onObservedVehicle(self):
-        # print "Woooooooooooooo -  A new vehicle just passed by"
         aVehicle = vehicle.NormalVehicle(self.speedLimit)
         self.__notifyCloudOfVehicle(aVehicle)
 
 
-# def cameraFromJson(json_string):
-#     return json.loads(json_string, object_hook=asSpeedCamera)
-#
-# def asSpeedCamera(dic):
-#     SpeedCamera = SpeedCamera(dic['street'], dic['city'])
-#     vehicle.__dict__.update(dic)
-#     return vehicle
-
+## Global "factory" functions
 def activateInNewThread(camera, speedLimit, rate):
     thread = threading.Thread(target=camera.activate, args=(speedLimit, rate))
+    thread.daemon = True
     thread.start()
     return thread
 
