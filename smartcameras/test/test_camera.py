@@ -1,5 +1,6 @@
 import threading
 from smartcameras.speedcamera import SpeedCamera
+import smartcameras.speedcamera as speedcamera
 import time
 
 def test_constructor():
@@ -31,3 +32,8 @@ def test_activity_with_threads():
     t.join()
     assert camera.isActive == False
     # print(camera.toJson())
+
+# def test_pub_sub():
+#     camera = SpeedCamera("Blandford Square", "Newcastle")
+#     thread = speedcamera.activateInNewThread(camera, 50, 5)
+    

@@ -28,11 +28,13 @@ class NormalVehicle(object):
         print "Type =" , self.type
         print "Speed =" , self.speed
 
+    def toDict(self):
+        return {"plate" : self.plate,
+                "type"  : self.type,
+                "speed" : self.speed}
+
     def toJson(self):
-        return json.dumps({"plate" : self.plate,
-                           "type"  : self.type,
-                           "speed" : self.speed},
-                           indent = 4, sort_keys = False)
+        return json.dumps(self.toDict(), indent = 4, sort_keys = False)
 
 def vehicleFromJson(json_string):
     return json.loads(json_string, object_hook=asVehicle)

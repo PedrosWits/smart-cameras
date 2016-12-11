@@ -22,6 +22,8 @@ class SpeedCamera(object):
         self.rate = None
         if cloudhook is None:
             self.cloudhook = azurehook.AzureHook()
+            self.cloudhook.createTopic(self.TOPIC_CAMERA)
+            self.cloudhook.createTopic(self.TOPIC_VEHICLE)
         if name is not None:
             self.name = name
 
@@ -56,15 +58,16 @@ class SpeedCamera(object):
         self.isActive = False
         self.nextVehicle.set()
 
+    def toDict(self):
+        return {"id"         : self.id,
+                "street"     : self.street,
+                "city"       : self.city,
+                "rate"       : self.rate,
+                "speedLimit" : self.speedLimit,
+                "isActive"   : self.isActive,
+                "last_activation" : str(self.datetime)}
     def toJson(self):
-        return json.dumps({"id"         : self.id,
-                           "street"     : self.street,
-                           "city"       : self.city,
-                           "rate"       : self.rate,
-                           "speedLimit" : self.speedLimit,
-                           "isActive"   : self.isActive,
-                           "last_activation" : str(self.datetime)},
-                           indent = 4, sort_keys = True)
+        return json.dumps(self.toDict(), indent = 4, sort_keys = True)
 
     ## Helping/Private methods
     ################################################
@@ -74,14 +77,15 @@ class SpeedCamera(object):
         return np.random.exponential(1./self.rate)
 
     def __notifyCloudOfSelf(self):
-        pass
-        self.cloudhook.createTopic(self.TOPIC_CAMERA)
+        return
         self.cloudhook.publish(self.TOPIC_CAMERA, self.toJson())
 
     def __notifyCloudOfVehicle(self, vehicle):
-        pass
-        self.cloudhook.createTopic(self.TOPIC_CAMERA)
-        self.cloudhook.publish(self.TOPIC_CAMERA, vehicle.toJson())
+        return
+        messageBody = json.dumps({'vehicle' : vehicle.toDict(),
+                                  'camera'  : self.toDict()},
+                                 indent = 4, sort_keys = True)
+        self.cloudhook.publish(self.TOPIC_CAMERA, messageBody)
 
     def __onObservedVehicle(self):
         # print "Woooooooooooooo -  A new vehicle just passed by"
@@ -97,6 +101,11 @@ class SpeedCamera(object):
 #     vehicle.__dict__.update(dic)
 #     return vehicle
 
+def activateInNewThread(camera, speedLimit, rate):
+    thread = threading.Thread(target=camera.activate, args=(speedLimit, rate))
+    thread.start()
+    return thread
+
 # def main():
 #     parser = argparse.ArgumentParser(
 #         description='Launch a speed camera')
@@ -104,6 +113,9 @@ class SpeedCamera(object):
 #                         metavar="<action>",
 #                         choices=['start', 'shutdown', 'status', 'camera'],
 #                         help='%(choices)s')
+#     thread = threading.Thread(target=camera.activate, args=(speedLimit, rate))
+#     thread.start()
+#     return thread.isAlive
 #
 # if __name__ == "__main__":
 #     main()
