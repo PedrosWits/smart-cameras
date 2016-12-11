@@ -5,11 +5,16 @@ import numpy as np
 import threading
 import vehicle
 import azurehook
+import json
 
 class SpeedCamera(object):
+    TOPIC_CAMERA = "SpeedCamera"
+    TOPIC_VEHICLE = "Vehicle"
+    FILTER_CAMERA_ACTIVATED = "Activated"
+    FILTER_CAMERA_DEACTIVATED = "Deactivated"
 
     def __init__(self, street, city, cloudhook = None, name = None):
-        self.id = uuid.uuid4()
+        self.id = str(uuid.uuid4())
         self.street = street
         self.city = city
         self.isActive = False
@@ -51,6 +56,16 @@ class SpeedCamera(object):
         self.isActive = False
         self.nextVehicle.set()
 
+    def toJson(self):
+        return json.dumps({"id"         : self.id,
+                           "street"     : self.street,
+                           "city"       : self.city,
+                           "rate"       : self.rate,
+                           "speedLimit" : self.speedLimit,
+                           "isActive"   : self.isActive,
+                           "last_activation" : str(self.datetime)},
+                           indent = 4, sort_keys = True)
+
     ## Helping/Private methods
     ################################################
     def __genNextArrival(self):
@@ -59,19 +74,28 @@ class SpeedCamera(object):
         return np.random.exponential(1./self.rate)
 
     def __notifyCloudOfSelf(self):
-
-        print "Notifying Azure of Self"
-        return False
+        pass
+        self.cloudhook.createTopic(self.TOPIC_CAMERA)
+        self.cloudhook.publish(self.TOPIC_CAMERA, self.toJson())
 
     def __notifyCloudOfVehicle(self, vehicle):
-        print "Sending vehicle detection to Azure"
-        return False
+        pass
+        self.cloudhook.createTopic(self.TOPIC_CAMERA)
+        self.cloudhook.publish(self.TOPIC_CAMERA, vehicle.toJson())
 
     def __onObservedVehicle(self):
         # print "Woooooooooooooo -  A new vehicle just passed by"
         aVehicle = vehicle.NormalVehicle(self.speedLimit)
         self.__notifyCloudOfVehicle(aVehicle)
 
+
+# def cameraFromJson(json_string):
+#     return json.loads(json_string, object_hook=asSpeedCamera)
+#
+# def asSpeedCamera(dic):
+#     SpeedCamera = SpeedCamera(dic['street'], dic['city'])
+#     vehicle.__dict__.update(dic)
+#     return vehicle
 
 # def main():
 #     parser = argparse.ArgumentParser(

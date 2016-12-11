@@ -21,12 +21,13 @@ def test_relocate():
     assert camera.city == "Porto"
 
 def test_activity_with_threads():
-    print ""
     camera = SpeedCamera("Blandford Square", "Newcastle")
     t = threading.Thread(target=camera.activate, args=(50, 5))
     t.start()
     time.sleep(5)
     assert camera.isActive == True
+    # print(camera.toJson())
     camera.deactivate()
     t.join()
     assert camera.isActive == False
+    # print(camera.toJson())
