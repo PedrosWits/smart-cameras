@@ -13,7 +13,7 @@ def test_pupsub():
 
     subscription = "helloworld"
     azure.subscribe(test_topic, subscription)
-    message = azure.getMessage(test_topic, subscription, timeout='5').body
+    message = azure.getMessage(test_topic, subscription, timeout='5')
     if message is not None:
         assert message.body == "Hello"
     azure.serviceBus.delete_subscription(test_topic, subscription)
