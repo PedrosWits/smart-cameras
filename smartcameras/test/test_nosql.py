@@ -1,10 +1,19 @@
 import threading
 import time
-from smartcameras.nosqlconsumer import TableConsumer
+from smartcameras.nosqlconsumer import TableBuilder
 from smartcameras.speedcamera import SpeedCamera
+from smartcameras.querybuilder import QueryBuilder
+
+def flushTables():
+    table = TableBuilder()
+    table.flushTable(TableBuilder.TABLE_VEHICLE)
+    table.flushTable(TableBuilder.TABLE_CAMERA)
+    queryBuilder = QueryBuilder()
+    entities = queryBuilder.retrieveCameraActivations()
+    assert len(entities) == 0
 
 def test_simple():
-    table = TableConsumer()
+    table = TableBuilder()
     threadConsumer = threading.Thread(target=table.activate)
     threadConsumer.daemon = True
     threadConsumer.start()
@@ -21,3 +30,7 @@ def test_simple():
 
     table.terminate()
     threadConsumer.join()
+
+    queryBuilder = QueryBuilder()
+    entities = queryBuilder.retrieveCameraActivations()
+    assert len(entities) != 0
