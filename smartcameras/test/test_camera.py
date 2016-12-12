@@ -23,7 +23,7 @@ def test_relocate():
     assert camera.city == "Porto"
 
 def test_activity_with_threads():
-    camera = SpeedCamera("Blandford Square", "Newcastle")
+    camera = SpeedCamera("Queens Road", "Manchester")
     t = threading.Thread(target=camera.activate, args=(50, 5))
     t.start()
     time.sleep(5)
@@ -35,11 +35,11 @@ def test_activity_with_threads():
     #print(camera.toJson())
 
 def test_constants():
-    assert SpeedCamera.TOPIC == "SpeedCamera"
+    assert SpeedCamera.TOPIC == "speedcamera"
 
 def test_pub_sub():
     test_subscription = "TEST_PUB_SUB"
-    camera = SpeedCamera("Blandford Square", "Newcastle")
+    camera = SpeedCamera("Big Ben", "London")
 
     camera.cloudhook.serviceBus.delete_subscription(SpeedCamera.TOPIC, test_subscription)
 
