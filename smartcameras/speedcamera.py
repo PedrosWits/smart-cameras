@@ -8,10 +8,10 @@ import azurehook
 import json
 
 class SpeedCamera(object):
-    TOPIC = "SpeedCamera"
-    EVENT_ACTIVATION = "Camera_Activated"
-    EVENT_DEACTIVATION = "Camera_Deactivated"
-    EVENT_VEHICLE = "Vehicle_Detected"
+    TOPIC = "speedcamera"
+    EVENT_ACTIVATION = "ACTIVATION"
+    EVENT_DEACTIVATION = "DEACTIVATION"
+    EVENT_VEHICLE = "OBSERVATION"
 
     def __init__(self, street, city, cloudhook = None, name = None):
         self.id = str(uuid.uuid4())
