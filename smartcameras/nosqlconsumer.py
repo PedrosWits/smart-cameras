@@ -28,9 +28,10 @@ class TableBuilder(object):
         self.nextCheck = threading.Event()
         retries = 0
         while self.isActive:
-            message = self.azure.getMessage(SpeedCamera.TOPIC,
-                                            self.SUBSCRIPTION,
-                                            timeout=timeout)
+            message = self.azure.getMessage(
+                            SpeedCamera.TOPIC,
+                            self.SUBSCRIPTION,
+                            timeout=timeout)
             if message is None:
                 retries += 1
             else:
