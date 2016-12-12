@@ -1,16 +1,18 @@
 import threading
 import time
+import pytest
 from smartcameras.nosqlconsumer import TableBuilder
 from smartcameras.speedcamera import SpeedCamera
 from smartcameras.querybuilder import QueryBuilder
 
-def flushTables():
+def test_flushTables():
     table = TableBuilder()
     table.flushTable(TableBuilder.TABLE_VEHICLE)
     table.flushTable(TableBuilder.TABLE_CAMERA)
     queryBuilder = QueryBuilder()
-    entities = queryBuilder.retrieveCameraActivations()
-    assert len(entities) == 0
+    assert len(queryBuilder.retrieveCameraActivations()) == 0
+    # with pytest.raises(ValueError):
+    #     entities = queryBuilder.retrieveCameraActivations()
 
 def test_simple():
     table = TableBuilder()
@@ -33,4 +35,4 @@ def test_simple():
 
     queryBuilder = QueryBuilder()
     entities = queryBuilder.retrieveCameraActivations()
-    assert len(entities) != 0
+    assert len(entities) == 1
