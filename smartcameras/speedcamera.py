@@ -8,8 +8,10 @@ import azurehook
 import json
 
 class SpeedCamera(object):
-    TOPIC_CAMERA = "SpeedCamera"
-    TOPIC_VEHICLE = "Vehicle"
+    TOPIC = "SpeedCamera"
+    EVENT_ACTIVATION = "Camera_Activated"
+    EVENT_DEACTIVATION = "Camera_Deactivated"
+    EVENT_VEHICLE = "Vehicle_Detected"
 
     def __init__(self, street, city, cloudhook = None, name = None):
         self.id = str(uuid.uuid4())
@@ -20,8 +22,7 @@ class SpeedCamera(object):
         self.rate = None
         if cloudhook is None:
             self.cloudhook = azurehook.AzureHook()
-            self.cloudhook.createTopic(self.TOPIC_CAMERA)
-            self.cloudhook.createTopic(self.TOPIC_VEHICLE)
+            self.cloudhook.createTopic(self.TOPIC)
         if name is not None:
             self.name = name
 
@@ -50,6 +51,8 @@ class SpeedCamera(object):
             # Vehicle has passed - Create new vehicle
             self.__onObservedVehicle()
         # End of Loop
+        self.datetime = datetime.datetime.now()
+        self.__notifyCloudOfSelf()
 
     # Preferably called from a separate thread
     def deactivate(self):
@@ -63,7 +66,8 @@ class SpeedCamera(object):
                 "rate"       : self.rate,
                 "speedLimit" : self.speedLimit,
                 "isActive"   : str(self.isActive),
-                "last_activation" : str(self.datetime)}
+                "timestamp"  : datetimeToTimestamp(self.datetime)}
+
     def toJson(self):
         return json.dumps(self.toDict(), indent = 4, sort_keys = True)
 
@@ -75,23 +79,35 @@ class SpeedCamera(object):
         return np.random.exponential(1./self.rate)
 
     def __notifyCloudOfSelf(self):
-        self.cloudhook.publish(self.TOPIC_CAMERA, self.toJson())
+        dic = {}
+        if self.isActive:
+            dic['event'] = self.EVENT_ACTIVATION
+        else:
+            dic['event'] = self.EVENT_DEACTIVATION
+        dic['camera'] = self.toDict()
+        json_string = json.dumps(dic, indent = 4, sort_keys = False)
+        self.cloudhook.publish(self.TOPIC, json_string)
 
     def __notifyCloudOfVehicle(self, vehicle):
-        messageBody = json.dumps({'vehicle' : vehicle.toDict(),
-                                  'camera'  : self.toDict()},
-                                 indent = 4, sort_keys = True)
-        self.cloudhook.publish(self.TOPIC_VEHICLE, messageBody)
+        dic = {}
+        dic['event'] = self.EVENT_VEHICLE
+        dic['vehicle'] = vehicle.toDict()
+        dic['camera'] = self.toDict()
+        json_string = json.dumps(dic, indent = 4, sort_keys = True)
+        self.cloudhook.publish(self.TOPIC, json_string)
 
     def __onObservedVehicle(self):
         aVehicle = vehicle.NormalVehicle(self.speedLimit)
         self.__notifyCloudOfVehicle(aVehicle)
 
 
+def datetimeToTimestamp(dt):
+    return (dt - datetime.datetime(1970, 1, 1)).total_seconds()
+
 ## Global "factory" functions
-def activateInNewThread(camera, speedLimit, rate):
+def activateInNewThread(camera, speedLimit, rate, daemon = True):
     thread = threading.Thread(target=camera.activate, args=(speedLimit, rate))
-    thread.daemon = True
+    thread.daemon = daemon
     thread.start()
     return thread
 
