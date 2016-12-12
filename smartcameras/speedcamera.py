@@ -56,6 +56,8 @@ class SpeedCamera(object):
 
     # Preferably called from a separate thread
     def deactivate(self):
+        if not self.isActive:
+            raise ValueError("Camera is not active")
         self.isActive = False
         self.nextVehicle.set()
 
