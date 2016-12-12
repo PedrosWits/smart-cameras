@@ -6,6 +6,9 @@ middle_earth = {"service_namespace" : 'middle-earth',
                 "shared_access_key_name" : 'RootManageSharedAccessKey',
                 "shared_access_key_value" : 'LrEVp0ypG8jkxxnE1GHq0Jg1fT1DNGPgMaXGW1mKw3o='}
 
+table_cred = {"mykey" : "umh7XfkHhN05Blx7+LltNoSZ8xr6qD7l5dJZ44LRJH6YoQ4sWvQ6D2lyl31h3RfOBS/YWdtUN5ZseAKTnSctpg==",
+              "acc_name" : "smartcamerasdiag952"}
+
 class AzureHook(CloudHook):
 
     def __init__(self, serviceKeyValues = middle_earth):
