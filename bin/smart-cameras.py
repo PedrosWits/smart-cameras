@@ -149,15 +149,7 @@ Available operations:
 #     print msg
 # else:
 #     # server
-#     context = zmq.Context()
-#     socket = context.socket(zmq.REP)
-#     socket.bind('tcp://127.0.0.1:5555')
-#     while True:
-#         msg = socket.recv()
-#         if msg == 'zeromq':
-#             socket.send('ah ha!')
-#         else:
-#             socket.send('...nah')
+#
 
 
 if __name__ == "__main__":
