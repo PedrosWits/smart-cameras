@@ -1,5 +1,5 @@
 from speedcamera import SpeedCamera
-from nosqlconsumer import TableBuilder
+import nosqlconsumer
 from azure.storage.table import TableService
 import azurehook
 import threading
@@ -16,11 +16,13 @@ class QueryBuilder(object):
     # http://stackoverflow.com/questions/28019437/python-querying-all-rows-of-azure-table
     # Azure limitation: only a maximum of 1000 entities can be retrieved per query
     def retrieveCameraActivations(self):
+        if not self.table.exists(nosqlconsumer.TableBuilder.TABLE_CAMERA):
+            raise ValueError('Table %s does not exist', TableBuilder.TABLE_CAMERA)
         # hasRows = True
         marker = None
         cameras = []
         entities = self.table.query_entities(
-                        TableBuilder.TABLE_CAMERA,
+                        nosqlconsumer.TableBuilder.TABLE_CAMERA,
                         "PartitionKey eq '%s'" % SpeedCamera.EVENT_ACTIVATION,
                         marker = marker,
                         num_results=1000)
@@ -40,3 +42,6 @@ class QueryBuilder(object):
             # else:
             #     hasRows = False
         return cameras
+
+    def retrieveVehicleObservations(self):
+        return []
