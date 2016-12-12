@@ -3,6 +3,7 @@ import azurehook
 import threading
 import json
 import math
+import querybuilder
 from azure.storage.table import TableService, Entity
 
 class TableBuilder(object):
@@ -15,8 +16,10 @@ class TableBuilder(object):
             table_cred = azurehook.table_cred
         self.table = TableService(account_name=table_cred['account_name'],
                                   account_key=table_cred['mykey'])
-        self.table.create_table(self.TABLE_VEHICLE)
-        self.table.create_table(self.TABLE_CAMERA)
+        if not self.table.exists(self.TABLE_VEHICLE):
+            self.table.create_table(self.TABLE_VEHICLE)
+        if not self.table.exists(self.TABLE_CAMERA):
+            self.table.create_table(self.TABLE_CAMERA)
         self.azure = azurehook.AzureHook()
 
     def activate(self, timeout = 2):
@@ -45,9 +48,17 @@ class TableBuilder(object):
         self.nextCheck.set()
 
     def flushTable(self, tableName):
-        self.table.delete_table(tableName)
-        self.table.create_table(tableName)
-
+        if not self.table.exists(tableName):
+            raise ValueError("Given table does not exist")
+        queryBuilder = querybuilder.QueryBuilder()
+        if(tableName == self.TABLE_CAMERA):
+            entities = queryBuilder.retrieveCameraActivations()
+        elif(tableName == self.TABLE_VEHICLE):
+            entities = queryBuilder.retrieveVehicleObservations()
+        for entity in entities:
+            self.table.delete_entity(tableName,
+                                     entity.PartitionKey,
+                                     entity.RowKey)
 
     # Initially Amortized exponential backoff:
     # Given by the formula: timeout(seconds) = (2^ntries / 10)
