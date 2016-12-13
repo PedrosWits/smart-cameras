@@ -97,7 +97,10 @@ class SpeedCamera(object):
         dic['vehicle'] = vehicle.toDict()
         dic['camera'] = self.toDict()
         json_string = json.dumps(dic, indent = 4, sort_keys = True)
-        self.cloudhook.publish(self.TOPIC, json_string, extra = {'event' : dic['event']})
+        self.cloudhook.publish(self.TOPIC, json_string,
+                               extra = {'event' : dic['event'],
+                                        'isSpeeding' : dic['vehicle']['isSpeeding'],
+                                        'isPriority' : dic['vehicle']['isPriority']})
 
     def __onObservedVehicle(self):
         aVehicle = vehicle.NormalVehicle(self.speedLimit)

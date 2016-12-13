@@ -18,20 +18,28 @@ class NormalVehicle(object):
         index = np.random.randint(0, len(VehicleType))
         self.type = VehicleType[index]
         # Sample vehicle speed from a normal distribution
-        #  centered at maximumSpeed with sigma = 1/5 of maximumSpeed
+        #  centered at (maximumSpeed + sigma) with sigma = 1/5 of maximumSpeed
         sigma = maximumSpeed / 5
-        mu = maximumSpeed
+        mu = maximumSpeed + sigma
         self.speed = np.random.normal(mu, sigma)
+        self.isSpeeding = self.speed > maximumSpeed
+        self.isPriority = (1.10 * self.speed) > maximumSpeed
 
     def dump(self):
+        print("")
         print "License plate =" , self.plate
         print "Type =" , self.type
         print "Speed =" , self.speed
+        print "Is speeding = ", self.isSpeeding
+        print "Is priority = ", self.isPriority
+
 
     def toDict(self):
         return {"plate" : self.plate,
                 "type"  : self.type,
-                "speed" : self.speed}
+                "speed" : self.speed,
+                "isSpeeding" : self.isSpeeding,
+                "isPriority" : self.isPriority}
 
     def toJson(self):
         return json.dumps(self.toDict(), indent = 4, sort_keys = False)
