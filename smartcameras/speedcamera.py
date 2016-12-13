@@ -81,6 +81,7 @@ class SpeedCamera(object):
         return np.random.exponential(1./self.rate)
 
     def __notifyCloudOfSelf(self):
+        #print("SPEED CAMERA NOTIFY CLOUD")
         dic = {}
         if self.isActive:
             dic['event'] = self.EVENT_ACTIVATION
@@ -88,7 +89,7 @@ class SpeedCamera(object):
             dic['event'] = self.EVENT_DEACTIVATION
         dic['camera'] = self.toDict()
         json_string = json.dumps(dic, indent = 4, sort_keys = False)
-        self.cloudhook.publish(self.TOPIC, json_string)
+        self.cloudhook.publish(self.TOPIC, json_string, extra = {'event' : dic['event']})
 
     def __notifyCloudOfVehicle(self, vehicle):
         dic = {}
@@ -96,7 +97,7 @@ class SpeedCamera(object):
         dic['vehicle'] = vehicle.toDict()
         dic['camera'] = self.toDict()
         json_string = json.dumps(dic, indent = 4, sort_keys = True)
-        self.cloudhook.publish(self.TOPIC, json_string)
+        self.cloudhook.publish(self.TOPIC, json_string, extra = {'event' : dic['event']})
 
     def __onObservedVehicle(self):
         aVehicle = vehicle.NormalVehicle(self.speedLimit)

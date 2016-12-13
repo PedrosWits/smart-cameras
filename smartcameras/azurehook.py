@@ -42,8 +42,9 @@ class AzureHook(CloudHook):
             topicOptions.default_message_time_to_live = 'PT1M'
         self.serviceBus.create_topic(topicName, topicOptions)
 
-    def publish(self, topicName, messageBody):
-        self.serviceBus.send_topic_message(topicName, Message(messageBody))
+    def publish(self, topicName, messageBody, extra = None):
+        message = Message(messageBody, custom_properties=extra)
+        self.serviceBus.send_topic_message(topicName, message)
 
     def subscribe(self, topicName, subscriptionName):
         self.serviceBus.create_subscription(topicName, subscriptionName)
