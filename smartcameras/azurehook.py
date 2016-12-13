@@ -1,6 +1,8 @@
 from abc import ABCMeta
-from smartcameras.cloudhook import CloudHook
+from cloudhook import CloudHook
+import urllib2
 from azure.servicebus import ServiceBusService, Message, Topic, Queue
+import Queue as pyqueue
 
 middle_earth = {"service_namespace" : 'middle-earth',
                 "shared_access_key_name" : 'RootManageSharedAccessKey',
@@ -14,6 +16,7 @@ class AzureHook(CloudHook):
     def __init__(self, serviceKeyValues = middle_earth):
         # Call super class constructor
         CloudHook.__init__(self, serviceKeyValues)
+        self.queue = pyqueue.Queue()
 
     # Implement abstract methods
     def setupHook(self, kv):
@@ -43,8 +46,16 @@ class AzureHook(CloudHook):
         self.serviceBus.create_topic(topicName, topicOptions)
 
     def publish(self, topicName, messageBody, extra = None):
-        message = Message(messageBody, custom_properties=extra)
-        self.serviceBus.send_topic_message(topicName, message)
+        if hasConnectivity():
+            self.flushQueue()
+            message = Message(messageBody, custom_properties=extra)
+            self.serviceBus.send_topic_message(topicName, message)
+            return True
+        else:
+            self.queue.put({'topicName' : topicName,
+                            'messageBody' : messageBody,
+                            'extra' : extra})
+            return False
 
     def subscribe(self, topicName, subscriptionName):
         self.serviceBus.create_subscription(topicName, subscriptionName)
@@ -52,3 +63,33 @@ class AzureHook(CloudHook):
     def getMessage(self, topicName, subscriptionName, peek_lock = False, timeout = '60'):
         return self.serviceBus.receive_subscription_message(topicName, subscriptionName,
                                                             peek_lock = peek_lock, timeout = timeout)
+
+    # We could persist the data in a local sqllite database, which would be easy
+    # but we feel that that goes beyond the scope of this project
+    def flushQueue(self):
+        while not self.queue.empty():
+            try:
+                dic = self.queue.get_nowait()
+            except Queue.Empty:
+                break
+            message = Message(dic['messageBody'], custom_properties=dic['extra'])
+            self.serviceBus.send_topic_message(dic['topicName'], message)
+
+
+##########################################################################################
+##########################################################################################
+##########################################################################################
+#
+#       Helping Functions
+#
+##########################################################################################
+##########################################################################################
+##########################################################################################
+
+# Taken from: http://stackoverflow.com/questions/3764291/checking-network-connection
+def hasConnectivity():
+    try:
+        urllib2.urlopen('http://www.google.com', timeout=1)
+        return True
+    except urllib2.URLError as err:
+        return False
