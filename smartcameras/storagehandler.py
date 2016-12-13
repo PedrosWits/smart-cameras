@@ -6,7 +6,14 @@ import azurehook
 import json
 import subscriber
 
-## A Generic Class that Subscribes to a Topic
+################################################################################
+################################################################################
+#
+#     A Generic Class responsible for handling and persisting data obtained
+#     through an Azure subscription
+#
+################################################################################
+################################################################################
 class PersistentSubscriber(subscriber.AzureSubscriber):
     __metaclass__ = ABCMeta
 
@@ -23,29 +30,62 @@ class PersistentSubscriber(subscriber.AzureSubscriber):
         if not self.table.exists(tableName):
             self.table.create_table(tableName)
 
-    def flushTable(self):
-        if not self.table.exists(self.tableName):
-            raise ValueError("Given table does not exist")
-        entities = self.retrieveAllEntities()
-        for entity in entities:
-            self.table.delete_entity(self.tableName,
-                                     entity.PartitionKey,
-                                     entity.RowKey)
-
+    # Specify behavior on message received (from subscription).
+    # Default is insert entity.
     def onNewMessage(self, dic):
         entity = self.dictToEntity(dic)
         # print("INSERT CAMERA IN TABLE")
         self.table.insert_entity(self.tableName, entity)
 
-    @abstractmethod
-    def retrieveAllEntities(self):
-        pass
+    # Wrapper function for querying the table
+    # Azure limitation: only a maximum of 1000 entities can be retrieved per query
+    #
+    # Reference:
+    # http://stackoverflow.com/questions/28019437/python-querying-all-rows-of-azure-table
+    def queryTable(self, query_string):
+        if not self.table.exists(self.TABLE):
+            raise ValueError('Table %s does not exist', self.TABLE)
+        # hasRows = True
+        marker = None
+        results = []
+        entities = self.table.query_entities(
+                        self.TABLE,
+                        query_string,
+                        marker = marker,
+                        num_results=1000)
+        for entity in entities:
+            results.append(entity)
+        return results
 
+    # Retrieve all entities from a given partition (i.e. that match a given partitionkey)
+    def retrievePartition(self, partitionKey):
+        return self.queryTable("PartitionKey eq '%s'" % partitionKey);
+
+    # Flush all entities from a given partition (i.e. that match a given partitionkey)
+    def flushPartition(self, partitionKey):
+        if not self.table.exists(self.tableName):
+            raise ValueError("Given table does not exist")
+        entities = self.retrievePartition(partitionKey)
+        for entity in entities:
+            self.table.delete_entity(self.tableName,
+                                     entity.PartitionKey,
+                                     entity.RowKey)
+
+    # To be implemented by child classes: return an entity given the body
+    # of the message (as a dictionary).
     @abstractmethod
     def dictToEntity(self, dic):
         pass
 
-# Design Considerations:
+################################################################################
+################################################################################
+#
+#    Design Considerations (Choosing values for Partition and Row keys)
+#
+################################################################################
+################################################################################
+#
+#
 #   What kind of queries are we performing on these tables?
 #
 #   Remember: The partition key and rowkey have a unique combination
@@ -59,9 +99,20 @@ class PersistentSubscriber(subscriber.AzureSubscriber):
 #
 # Taken from: https://docs.microsoft.com/en-us/azure/storage/storage-table-design-guide
 
-## Class for persisting camera registrations (activations + deactivations)
+
+################################################################################
+################################################################################
+#
+#     Class responsible for handling and persisting camera activity
+#
+################################################################################
+################################################################################
+
 class CameraRegister(PersistentSubscriber):
-    TABLE = "Camera"
+    TABLE = "Cameras"
+    PARTITION_ACTIVATION = "CameraActivation"
+    PARTITION_DEACTIVATION = "CameraDeactivation"
+
     def __init__(self, table_cred = None):
         rule = Rule()
         rule.filter_type = 'SqlFilter'
@@ -71,34 +122,98 @@ class CameraRegister(PersistentSubscriber):
                                       SpeedCamera.TOPIC, "CameraRegister",
                                       "CameraRegisterRule", rule)
 
-    # Reference:
-    # http://stackoverflow.com/questions/28019437/python-querying-all-rows-of-azure-table
-    # Azure limitation: only a maximum of 1000 entities can be retrieved per query
-    def retrieveAllEntities(self):
-        if not self.table.exists(self.TABLE):
-            raise ValueError('Table %s does not exist', self.TABLE)
-        # hasRows = True
-        marker = None
-        cameras = []
-        entities = self.table.query_entities(
-                        self.TABLE,
-                        "PartitionKey eq '%s'" % SpeedCamera.EVENT_ACTIVATION,
-                        marker = marker,
-                        num_results=1000)
-        for entity in entities:
-            cameras.append(entity)
-
-        return cameras
+    # Query 1 of coursework
+    def retrieveAllActivations(self):
+        return self.retrievePartition(self.PARTITION_ACTIVATION)
 
     # Can query both camera activations and deactivations by partition key
     # Would like to have auto incrementing row key but there is no such thing in table storage
     # therefore we assume that - no two vehicles go through a camera at exactly the same time
     def dictToEntity(self, dic):
         entity = Entity()
-        entity.PartitionKey = dic['event']
+        if dic['camera']['isActive'] == "True":
+            entity.PartitionKey = self.PARTITION_ACTIVATION
+        else:
+            entity.PartitionKey = self.PARTITION_DEACTIVATION
         entity.RowKey = str(dic['camera']['timestamp'])
         entity.id = dic['camera']['id']
-        # Compact json encoding (can be later decoded into dictionary)
-        entity.json = json.dumps(dic, separators=(',',':'),
-                                 sort_keys=False)
+        entity.street = dic['camera']['street']
+        entity.city = dic['camera']['city']
+        entity.speedLimit = dic['camera']['speedLimit']
+        entity.rate = dic['camera']['rate']
         return entity
+
+################################################################################
+################################################################################
+#
+#     Class responsible for handling and persisting vehicle sightings
+#
+################################################################################
+################################################################################
+class VehicleRegister(PersistentSubscriber):
+    TABLE = "Sightings"
+    PARTITION = "VehicleSightings"
+
+    def __init__(self, table_cred = None):
+        rule = Rule()
+        rule.filter_type = 'SqlFilter'
+        rule.filter_expression = "event = '%s'" % (SpeedCamera.EVENT_VEHICLE)
+        # Call super class constructor
+        PersistentSubscriber.__init__(self, self.TABLE,
+                                      SpeedCamera.TOPIC, "VehicleRegister",
+                                      "VehicleRegisterRule", rule)
+
+    # Can query both camera activations and deactivations by partition key
+    # Would like to have auto incrementing row key but there is no such thing in table storage
+    # therefore we assume that - no two vehicles go through a camera at exactly the same time
+    def dictToEntity(self, dic):
+        # Ditionary is nested so we have to un-nest it or else it fails
+        return vehicleToEntity(dic)
+
+################################################################################
+################################################################################
+#
+#     Class responsible for handling and persisting speeding vehicle sightings
+#
+################################################################################
+################################################################################
+
+class PoliceMonitor(PersistentSubscriber):
+    TABLE = "SpeedingSightings"
+    PARTITION = "SpeedingVehicles"
+    def __init__(self, table_cred = None):
+        rule = Rule()
+        rule.filter_type = 'SqlFilter'
+        rule.filter_expression = "event = '%s' AND isSpeeding = TRUE" % (self.PARTITION_KEY)
+        # Call super class constructor
+        PersistentSubscriber.__init__(self, self.TABLE,
+                                      SpeedCamera.TOPIC, "PoliceMonitor",
+                                      "PoliceMonitorRule", rule)
+
+    # Query 2 of coursework
+    def retrievePrioritySightings(self):
+        return self.queryTable("PartitionKey eq '%s' AND isSpeeding eq TRUE" % self.PARTITION)
+
+    # Can query both camera activations and deactivations by partition key
+    # Would like to have auto incrementing row key but there is no such thing in table storage
+    # therefore we assume that - no two vehicles go through a camera at exactly the same time
+    def dictToEntity(self, dic):
+        # Ditionary is nested so we have to un-nest it or else it fails
+        return vehicleToEntity(dic)
+
+
+# Helping function
+def vehicleToEntity(dic):
+    entity = Entity()
+    entity.PartitionKey = dic['event']
+    entity.RowKey = str(dic['camera']['timestamp'])
+    entity.camera = dic['camera']['id']
+    entity.street = dic['camera']['street']
+    entity.city = dic['camera']['city']
+    entity.speedLimit = dic['camera']['speedLimit']
+    entity.plate = dic['vehicle']['plate']
+    entity.type = dic['vehicle']['type']
+    entity.speed = dic['vehicle']['speed']
+    entity.isSpeeding = dic['vehicle']['isSpeeding']
+    entity.isPriority = dic['vehicle']['isPriority']
+    return entity
