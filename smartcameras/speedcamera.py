@@ -96,6 +96,7 @@ class SpeedCamera(object):
         dic['event'] = self.EVENT_VEHICLE
         dic['vehicle'] = vehicle.toDict()
         dic['camera'] = self.toDict()
+        dic['timestamp'] = str(datetimeToTimestamp(datetime.datetime.now()))
         json_string = json.dumps(dic, indent = 4, sort_keys = True)
         self.cloudhook.publish(self.TOPIC, json_string,
                                extra = {'event' : dic['event'],
@@ -116,17 +117,3 @@ def activateInNewThread(camera, speedLimit, rate, daemon = True):
     thread.daemon = daemon
     thread.start()
     return thread
-
-# def main():
-#     parser = argparse.ArgumentParser(
-#         description='Launch a speed camera')
-#     parser.add_argument('action',
-#                         metavar="<action>",
-#                         choices=['start', 'shutdown', 'status', 'camera'],
-#                         help='%(choices)s')
-#     thread = threading.Thread(target=camera.activate, args=(speedLimit, rate))
-#     thread.start()
-#     return thread.isAlive
-#
-# if __name__ == "__main__":
-#     main()
