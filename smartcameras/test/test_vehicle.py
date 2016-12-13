@@ -9,13 +9,13 @@ def test_vehicle():
     truck = NormalVehicle(30)
     assert truck.plate == "QN35 EVJ"
     assert truck.type == "TRUCK"
-    assert math.floor(truck.speed) == 27
+    assert truck.speed > 0
 
 def test_json():
     vehicle = NormalVehicle()
     vehicle_json = vehicle.toJson()
     vehicle2 = vehicleFromJson(vehicle_json)
-    
+
     assert type(vehicle) == type(vehicle2)
     assert vehicle.plate == vehicle2.plate
     assert vehicle.speed == vehicle2.speed
