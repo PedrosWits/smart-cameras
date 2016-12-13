@@ -168,7 +168,7 @@ class VehicleRegister(PersistentSubscriber):
     # therefore we assume that - no two vehicles go through a camera at exactly the same time
     def dictToEntity(self, dic):
         # Ditionary is nested so we have to un-nest it or else it fails
-        return vehicleToEntity(dic)
+        return vehicleToEntity(dic, self.PARTITION)
 
 ################################################################################
 ################################################################################
@@ -184,7 +184,7 @@ class PoliceMonitor(PersistentSubscriber):
     def __init__(self, table_cred = None):
         rule = Rule()
         rule.filter_type = 'SqlFilter'
-        rule.filter_expression = "event = '%s' AND isSpeeding = TRUE" % (self.PARTITION_KEY)
+        rule.filter_expression = "event = '%s' AND isSpeeding = TRUE" % (SpeedCamera.EVENT_VEHICLE)
         # Call super class constructor
         PersistentSubscriber.__init__(self, self.TABLE,
                                       SpeedCamera.TOPIC, "PoliceMonitor",
@@ -192,22 +192,23 @@ class PoliceMonitor(PersistentSubscriber):
 
     # Query 2 of coursework
     def retrievePrioritySightings(self):
-        return self.queryTable("PartitionKey eq '%s' AND isSpeeding eq TRUE" % self.PARTITION)
+        return self.queryTable("PartitionKey eq '%s'" % self.PARTITION)
 
     # Can query both camera activations and deactivations by partition key
     # Would like to have auto incrementing row key but there is no such thing in table storage
     # therefore we assume that - no two vehicles go through a camera at exactly the same time
-    def dictToEntity(self, dic):
+    def dictToEntity(self, dic):        
         # Ditionary is nested so we have to un-nest it or else it fails
-        return vehicleToEntity(dic)
+        return vehicleToEntity(dic, self.PARTITION)
 
 
 # Helping function
-def vehicleToEntity(dic):
+def vehicleToEntity(dic, partitionKey):
     entity = Entity()
-    entity.PartitionKey = dic['event']
-    entity.RowKey = str(dic['camera']['timestamp'])
+    entity.PartitionKey = partitionKey
+    entity.RowKey = str(dic['timestamp'])
     entity.camera = dic['camera']['id']
+    entity.camera_activation = str(dic['camera']['timestamp'])
     entity.street = dic['camera']['street']
     entity.city = dic['camera']['city']
     entity.speedLimit = dic['camera']['speedLimit']
