@@ -2,6 +2,7 @@ import threading
 import time
 import pytest
 from smartcameras.storagehandler import CameraRegister, PoliceMonitor
+from smartcameras.subscriber import VehicleInspector
 from smartcameras.speedcamera import SpeedCamera
 
 def test_camera_register():
@@ -51,3 +52,22 @@ def test_police_monitor():
 
     entities = policeMonitor.retrievePrioritySightings()
     assert len(entities) > 0
+
+def test_vehicle_inspector():
+    inspector = VehicleInspector()
+    threadConsumer = threading.Thread(target=inspector.activate)
+    threadConsumer.daemon = True
+    threadConsumer.start()
+
+    camera = SpeedCamera("Bomba Galp", "Porto")
+    threadProducer = threading.Thread(target=camera.activate, args=(50, 1))
+    threadProducer.daemon = True
+    threadProducer.start()
+
+    time.sleep(20)
+
+    camera.deactivate()
+    threadProducer.join()
+
+    inspector.terminate()
+    threadConsumer.join()
