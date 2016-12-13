@@ -192,12 +192,12 @@ class PoliceMonitor(PersistentSubscriber):
 
     # Query 2 of coursework
     def retrievePrioritySightings(self):
-        return self.queryTable("PartitionKey eq '%s'" % self.PARTITION)
+        return self.queryTable("PartitionKey eq '%s' and isPriority eq true" % self.PARTITION)
 
     # Can query both camera activations and deactivations by partition key
     # Would like to have auto incrementing row key but there is no such thing in table storage
     # therefore we assume that - no two vehicles go through a camera at exactly the same time
-    def dictToEntity(self, dic):        
+    def dictToEntity(self, dic):
         # Ditionary is nested so we have to un-nest it or else it fails
         return vehicleToEntity(dic, self.PARTITION)
 
