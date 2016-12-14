@@ -7,6 +7,7 @@ import vehicle
 import azurehook
 import json
 
+
 class SpeedCamera(object):
     TOPIC = "speedcamera"
     EVENT_ACTIVATION = "ACTIVATION"
@@ -24,7 +25,7 @@ class SpeedCamera(object):
             self.cloudhook = azurehook.AzureHook()
             self.cloudhook.createTopic(self.TOPIC)
         if name is not None:
-            self.name = name
+            self.name = name        
 
     def relocate(self, street, city = None):
         self.street = street
@@ -81,7 +82,6 @@ class SpeedCamera(object):
         return np.random.exponential(1./self.rate)
 
     def __notifyCloudOfSelf(self):
-        #print("SPEED CAMERA NOTIFY CLOUD")
         dic = {}
         if self.isActive:
             dic['event'] = self.EVENT_ACTIVATION
@@ -106,6 +106,16 @@ class SpeedCamera(object):
     def __onObservedVehicle(self):
         aVehicle = vehicle.NormalVehicle(self.speedLimit)
         self.__notifyCloudOfVehicle(aVehicle)
+
+##########################################################################################
+##########################################################################################
+##########################################################################################
+#
+#       Helping Functions
+#
+##########################################################################################
+##########################################################################################
+##########################################################################################
 
 
 def datetimeToTimestamp(dt):
