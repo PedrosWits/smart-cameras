@@ -1,0 +1,1 @@
+from smartcameras.cameramanager import CameraManager
