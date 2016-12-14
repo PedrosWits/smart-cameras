@@ -49,3 +49,77 @@ At the end of this process and running the azure examples
 image::images/dirTree.png[dirTree, 400, 300]
 
 == Pipeline
+TODO
+
+== Task Design and Implementation
+
+When using python for this job, one could first think about coding it in a more ad-hoc style, i.e. as a large script or series of connected scripts.
+However, I'm often interested in developing a cohesive set of blocks that can be re-used later or extended by exposing an Application Programming Interface (API).
+In fact, as most programming languages, python can also be used easily for this intent, especially when considering that it is an object-oriented language.
+Therefore, I tried at each step to encapsulate all required behavior in classes, while modeling the entities outlined in the coursework (e.g. speed camera).
+Although this sort of process often requires extra time spent going back through the code, writing proper tests and refactoring, it usually pays of in the end
+because we have a more elegant and developer-friendly solution. The development process took place as follows:
+
+[[img-dev-process]]
+.Steps in the development process
+image::images/devProcess.png[devProcess, 400, 300]
+
+I considered using Test-Driven-Development (TDD), but I feel more comfortable using a more flexible back and forth methodology
+(which arguably ends up being very similar to TDD if we consider the iterative refactoring step in TDD).
+
+=== Task 1: Smart Speed Camera
+
+For this task I modeled the following entities using classes:
+
+* _SpeedCamera_ - Represents a speed camera located at a given street and city in on of two states: active or not active. If active then it has an associated speed limit and
+simulates vehicle sightings according to a poisson process with rate &#955; by sampling arrival times from an exponential distribution with rate 1/&#955;. A speed camera
+can be activated and deactivated using the respective methods. Upon activation and deactivation it publishes itself by sending a message to an azure topic. The topic name is
+given by a constant defined as a class variable (http://stackoverflow.com/questions/2682745/how-to-create-a-constant-in-python/[reference]). Once activated the camera enters
+an infinite loop that can be terminated by calling _deactivate_. The status of a _SpeedCamera_ instance can be determined by querying the value of boolean attribute _isActive_.
+While active, the camera computes the next vehicle arrival time, sleeps until that time has elapsed (can be woken up by _deactivate_) and then publishes the sighting onto the
+same topic as before. Object serialization is done using a simple *json* encoding. Deserialization is only supported for _Vehicles_
+and not for _SpeedCameras_ as the first is an immutable object while the second is not. Besides camera and vehicle information, extracted directly from the classes' attributes,
+we also passed an extra value denoting the kind of event being published: camera activation, camera deactivation or vehicle sighting.
+However, as we will see on the next section, Azure's _Rules_ could be used more effectively to provide message filtering (based on the different events that generated them).
+And indeed they were, but I only implemented them at a later stage. Finally, offline operation is supported but only during program execution (messages are stored in a queue and
+flushed once there on the next successful publish attempt). Ideally, we would backup messages in a local database such as SQLite, in order not to lose any information, but I felt
+that this was unnecessary at this stage.
+
+* _Vehicle_ - Represents a vehicle sighting, with attributes __plate__, __type__ and __speed__ of vehicle. Plate is simulated by uniformly sampling 2 letters and 2 numbers
+followed by 3 letters. Speed is simulated by sampling from a normal distribution with standard deviation equal to one fifth of the speed limit and mean equal to the speed limit minus
+one standard deviation. This implies that about 84% of all sightings will be below the speed limit (CDF of normal distribution at mean + standard deviation = 84%) while the rest of
+observations will be speeding vehicles. At the same time, we restricted the values of speed limit to equal or great than 30 (which is not a totally unrealistic assumption),
+in order to ensure that we would not sample negative speed values. Therefore, at the speed limit of 30 units (units can represent either
+kilometers or miles per hour) the probability of sampling a vehicle with speed less of greater than 10 units is equal to approximately 0.003167 % (CDF at mean - 4 standard deviations).
+
+* _AzureHook_ - A wrapper class for azure's service bus that tries to simplify method calls to Service Bus. Ideally we would like our speed camera to be completely
+unaware of who the cloud provider is and operate exactly the same way whether the provider is: Microsoft, Amazon, Google or other. Providing loose coupling between
+classes would enable us to use one class irrespectively of the other, and changing provider would not mean we had to modify any of the code we wrote for speed camera.
+This could be accomplished by writing an interface or abstract class that provides the methods for cloud integration, such as authentication, sending and receiving data to and from
+some component (queues and topics in Azure's case), publish and subscribe entities, store and query information, among others. The camera could then take an instance of the abstract
+class as an input (in the constructor for example) and access the methods it requires. AzureHook would then be an implementation or child class of such interface or abstract class.
+However, this functionality would be nice to have, it is hard to normalize a set of methods across a single abstract class in such short period and it would not be very useful since
+only one implementation would be provided - Azure's. _CloudHook_ represents an attempt to build such abstract class in python.
+
+At this stage I also started thinking about the execution model of the program given the requirements about speed cameras:
+
+* Multiple _SpeedCameras_ should be able to operate concurrently
+* Should be able to change the location of a camera while it is active
+* We should be able to restart the camera (without killing the program?)
+
+A first
+
+=== Task 2: NoSql Consumer
+
+== Table Storage Design
+
+In my opinion, one way to better model the problem would have been to
+use a single 'SpeedCamera' Table with different partitions, where each partition
+represents a different entity or event relative to the Speed Camera, i.e. activation,
+deactivation, sighting, speeding, etc.
+That way we would use less resources (Table Storage units) and get exactly the same functionality,
+with better readability, query-wise because the partition key in this case can be something completely
+arbitrary as there is only a single partition per table.
+
+Azure query retrieval limitation: Azure only lets you retrieve up to 1000 entities per query.
+Therefore, applications operating on tables with more than 1000 entities stored, need to
