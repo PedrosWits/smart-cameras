@@ -1,8 +1,8 @@
 = Smart Speed Cameras: [CSC8110] Cloud Computing
 Pedro Silva <p.pinto-da-silva2@newcastle.ac.uk>
-16-12-2016
+15-12-2016
 
-== System Design
+== Development Tools
 
 As suggested in the coursework document, I took on this challenge
 not only to discover how we can achieve
@@ -16,7 +16,7 @@ how project directories should be organized, the convention when it comes
 to naming directories, source and test files, find out the equivalent build tool
 of Maven for _python_, how to publish a library, etc.
 
-To that extent we introduce the following technologies:
+To that extent I introduced the following technologies:
 
 * *GitHub with git-flow*: A solution for hosting projects and building software collaboratively.
 Git-flow is a git extension that allows you to operate on a repository following Vincent Driessen's branching model.
@@ -34,6 +34,7 @@ may have different or even conflicting requirements.
 heterogeneous systems.
 
 * *Py.test with code coverage*: Tools for automated testing which generate test coverage reports.
+
 * *Sphinx with autodoc*: Generates documentation for your project in similar fashion to javadoc.
 
 I started by setting up the project layout and skeleton, as well as configuring most of these tools
@@ -42,16 +43,13 @@ Most of these development and integration tools were suggested by
 https://www.jeffknupp.com/blog/2013/08/16/open-sourcing-a-python-project-the-right-way/[Jeff Knupp]
 on a blog post entitled "Open Sourcing a Python Project the Right Way".
 
-At the end of this process and running the azure examples
+At the end of this process and running the azure examples, I obtained the following file structure:
 
 [[img-dirtree]]
 .Basic project layout and directory structure
-image::images/dirTree.png[dirTree, 400, 300]
+image::images/dirTree.png[dirTree, 450, 350]
 
-== Pipeline
-TODO
-
-== Task Design and Implementation
+== Software Design and Implementation
 
 When using python for this job, one could first think about coding it in a more ad-hoc style, i.e. as a large script or series of connected scripts.
 However, I'm often interested in developing a cohesive set of blocks that can be re-used later or extended by exposing an Application Programming Interface (API).
@@ -60,9 +58,13 @@ Therefore, I tried at each step to encapsulate all required behavior in classes,
 Although this sort of process often requires extra time spent going back through the code, writing proper tests and refactoring, it usually pays of in the end
 because we have a more elegant and developer-friendly solution. The development process took place as follows:
 
-[[img-dev-process]]
-.Steps in the development process
-image::images/devProcess.png[devProcess, 400, 300]
+1. Write code (whether is template of class/method or advanced functionality).
+2. Write test.
+3. Fix code to pass the test.
+4. Refactor and clean code.
+5. Take a look at the whole picture - refactor, improve code accordingly.
+6. Verify that tests pass.
+7. Iterate.
 
 I considered using Test-Driven-Development (TDD), but I feel more comfortable using a more flexible back and forth methodology
 (which arguably ends up being very similar to TDD if we consider the iterative refactoring step in TDD).
@@ -71,7 +73,9 @@ I considered using Test-Driven-Development (TDD), but I feel more comfortable us
 
 For this task I modeled the following entities using classes:
 
-* _SpeedCamera_ - Represents a speed camera located at a given street and city in on of two states: active or not active. If active then it has an associated speed limit and
+===== SpeedCamera
+
+Represents a speed camera located at a given street and city in on of two states: active or not active. If active then it has an associated speed limit and
 simulates vehicle sightings according to a poisson process with rate &#955; by sampling arrival times from an exponential distribution with rate 1/&#955;. A speed camera
 can be activated and deactivated using the respective methods. Upon activation and deactivation it publishes itself by sending a message to an azure topic. The topic name is
 given by a constant defined as a class variable (http://stackoverflow.com/questions/2682745/how-to-create-a-constant-in-python/[reference]). Once activated the camera enters
@@ -85,14 +89,18 @@ And indeed they were, but I only implemented them at a later stage. Finally, off
 flushed once there on the next successful publish attempt). Ideally, we would backup messages in a local database such as SQLite, in order not to lose any information, but I felt
 that this was unnecessary at this stage.
 
-* _Vehicle_ - Represents a vehicle sighting, with attributes __plate__, __type__ and __speed__ of vehicle. Plate is simulated by uniformly sampling 2 letters and 2 numbers
+===== Vehicle
+
+Represents a vehicle sighting, with attributes __plate__, __type__ and __speed__ of vehicle. Plate is simulated by uniformly sampling 2 letters and 2 numbers
 followed by 3 letters. Speed is simulated by sampling from a normal distribution with standard deviation equal to one fifth of the speed limit and mean equal to the speed limit minus
 one standard deviation. This implies that about 84% of all sightings will be below the speed limit (CDF of normal distribution at mean + standard deviation = 84%) while the rest of
 observations will be speeding vehicles. At the same time, we restricted the values of speed limit to equal or great than 30 (which is not a totally unrealistic assumption),
 in order to ensure that we would not sample negative speed values. Therefore, at the speed limit of 30 units (units can represent either
 kilometers or miles per hour) the probability of sampling a vehicle with speed less of greater than 10 units is equal to approximately 0.003167 % (CDF at mean - 4 standard deviations).
 
-* _AzureHook_ - A wrapper class for azure's service bus that tries to simplify method calls to Service Bus. Ideally we would like our speed camera to be completely
+===== AzureHook
+
+A wrapper class for azure's service bus that tries to simplify method calls to Service Bus. Ideally we would like our speed camera to be completely
 unaware of who the cloud provider is and operate exactly the same way whether the provider is: Microsoft, Amazon, Google or other. Providing loose coupling between
 classes would enable us to use one class irrespectively of the other, and changing provider would not mean we had to modify any of the code we wrote for speed camera.
 This could be accomplished by writing an interface or abstract class that provides the methods for cloud integration, such as authentication, sending and receiving data to and from
@@ -155,8 +163,11 @@ more efficient queries are always aware of the value of the Partition Key. These
 https://docs.microsoft.com/en-us/azure/storage/storage-table-design-guide[link].
 
 For both tables, we used an arbitrary string for partition key, representing the underlying event (e.g. 'CameraActivation', 'VehicleSighting'),
-and the timestamp at the moment of the event (with millisecond precision) as the row key. Row key had to be incrementing in nature...............!!!!!!!!!
-Therefore, I made arguably a strong assumption in this
+and the timestamp at the moment of the event (with millisecond precision) as the row key. I considered using a unique combination of keys such as camera id
+and vehicle id or timestamp, but I found that queries such as returning all sightings or registrations would be hard to perform. Therefore,
+considering the examples given in the website, the value of partition key should represent some very high level component while the row key should be represented
+by something incremental and ordered by nature, for which time was a good fit.
+Furthermore, I made arguably a strong assumption in this
 case: no two cameras or cars are activated/observed at exactly the same time. An assumption which works well, simulation-wise, but might not in reality.
 I also introduced other fields on each case as fit, e.g. vehicle speed, location, etc.
 It was a shame that I could not use nested dictionaries instead of an Azure _Entity_.
@@ -173,6 +184,46 @@ I also read about the Azure Table query retrieval limitation: Azure only lets yo
 Therefore, applications querying on tables with more than 1000 entities stored, need to be adjusted to take that into account (using the *marker* parameter
 in the _TableService.query_entities_ function).
 
-=== Task 3 and 4
+=== Task 3 and 4: Query app and Police Monitor
 
-Given the
+Given the implementation described before, both of these tasks were very easily implemented.
+Speed camera activations are easily obtained by querying on partition key that matches the value for activation events on the table _speedcameras_.
+Slight modifications on the _Vehicle_ and _SpeedCamera_ classes enabled us to identify speeding vehicles and include this information on the publication
+in a way that it was possible to use the feature Subscriptions with Filters. To that extent, class _PoliceMonitor_ subclasses _PersistentSubscriber_ and
+writes speeding sightings on a different table. As we included rules in the generic class, associating filters with subscriptions is straightforward.
+The query for retrieving priority sightings from the table is accessible through the _PoliceMonitor_ class.
+
+=== Task 5: Vehicle Check
+
+In this task, we created class _VehicleInspector_ which is a child class of _AzureSubscriber_ instead of _PersistentSubscriber_ because we are not
+persisting any data, but instead just simulating an analytical task. Upon receiving a vehicle sighting, the _VehicleInspector_ puts the request for
+processing a vehicle on an internal queue. Concurrently, the _VehicleInspector_ is running a dedicated thread that takes requests from the queue and
+simulates the analysis process as specified in the coursework. _VehicleInspector_ can be terminated at any time that the owned processing thread
+is killed with it. It follows the execution model introduced for _AzureSubscriber_.
+
+== Task 5b: Azure Auto-Scale
+
+I did not perform this task due to time constraints.
+
+== Final Considerations
+
+All in all, I think this was a great project as it required several problem solving skills and engaged critical thinking.
+Although it was great to have the possibility to explore diverse implementation options and tools, I feel that it would have
+been useful to have a clear goal at the end of the project. In other words, I think that it should have been clearer from the start
+what specifically we should be able to demonstrate working at the end of the project.
+This may be even more critical for people that do not come from a
+stats background. Alternatively, we could have been provided the skeleton of a command line client, which we would have to
+integrate with our program. We could be given the client-side program and just need to implement the server-side and ensure
+that the command line interface client works.
+
+In my opinion, the documentation for Python's Azure SDK was lacking and in general there was not a lot of examples or
+questions and answers in websites like _StackOverflow_. Nevertheless, it was a great opportunity to learn how real
+distributed system work and how to quickly set up applications in the cloud. Once more, I saw how important tools like Git,
+Travis and virtualenv are for software development and how useful it can be in the long run to take a step back to try to improve and clean up your code and
+class models.
+
+Development proved to be essential in the detection of issues at early stages. Code coverage also provided a good overview of how well the tests
+were covering the written code. Continuous integration ensured that I kept the dependencies of my project to date and that the entire test suite
+was triggered everytime a push to Github was performed. Finally, codeclimate was difficult to integrate as it did not work properly outside the _master_ branch.
+As I was using *git-flow*, commits were made against the _develop_ branch and only release-ready code was merged into master, only then triggering the codeclimate feature.
+Unfortunately I ended up not having much time to try out Sphinx, write better in-file comments and write a proper README file.
