@@ -20,7 +20,7 @@ class NormalVehicle(object):
         # Sample vehicle speed from a normal distribution
         #  centered at (maximumSpeed + sigma) with sigma = 1/5 of maximumSpeed
         sigma = maximumSpeed / 5
-        mu = maximumSpeed + sigma
+        mu = maximumSpeed - sigma
         self.speed = np.random.normal(mu, sigma)
         self.isSpeeding = self.speed > maximumSpeed
         self.isPriority = (1.10 * self.speed) > maximumSpeed
