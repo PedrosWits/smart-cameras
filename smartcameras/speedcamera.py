@@ -7,6 +7,7 @@ import vehicle
 import azurehook
 import json
 
+
 class SpeedCamera(object):
     TOPIC = "speedcamera"
     EVENT_ACTIVATION = "ACTIVATION"
@@ -24,7 +25,7 @@ class SpeedCamera(object):
             self.cloudhook = azurehook.AzureHook()
             self.cloudhook.createTopic(self.TOPIC)
         if name is not None:
-            self.name = name
+            self.name = name        
 
     def relocate(self, street, city = None):
         self.street = street
@@ -88,19 +89,33 @@ class SpeedCamera(object):
             dic['event'] = self.EVENT_DEACTIVATION
         dic['camera'] = self.toDict()
         json_string = json.dumps(dic, indent = 4, sort_keys = False)
-        self.cloudhook.publish(self.TOPIC, json_string)
+        self.cloudhook.publish(self.TOPIC, json_string, extra = {'event' : dic['event']})
 
     def __notifyCloudOfVehicle(self, vehicle):
         dic = {}
         dic['event'] = self.EVENT_VEHICLE
         dic['vehicle'] = vehicle.toDict()
         dic['camera'] = self.toDict()
+        dic['timestamp'] = str(datetimeToTimestamp(datetime.datetime.now()))
         json_string = json.dumps(dic, indent = 4, sort_keys = True)
-        self.cloudhook.publish(self.TOPIC, json_string)
+        self.cloudhook.publish(self.TOPIC, json_string,
+                               extra = {'event' : dic['event'],
+                                        'isSpeeding' : dic['vehicle']['isSpeeding'],
+                                        'isPriority' : dic['vehicle']['isPriority']})
 
     def __onObservedVehicle(self):
         aVehicle = vehicle.NormalVehicle(self.speedLimit)
         self.__notifyCloudOfVehicle(aVehicle)
+
+##########################################################################################
+##########################################################################################
+##########################################################################################
+#
+#       Helping Functions
+#
+##########################################################################################
+##########################################################################################
+##########################################################################################
 
 
 def datetimeToTimestamp(dt):
@@ -112,17 +127,3 @@ def activateInNewThread(camera, speedLimit, rate, daemon = True):
     thread.daemon = daemon
     thread.start()
     return thread
-
-# def main():
-#     parser = argparse.ArgumentParser(
-#         description='Launch a speed camera')
-#     parser.add_argument('action',
-#                         metavar="<action>",
-#                         choices=['start', 'shutdown', 'status', 'camera'],
-#                         help='%(choices)s')
-#     thread = threading.Thread(target=camera.activate, args=(speedLimit, rate))
-#     thread.start()
-#     return thread.isAlive
-#
-# if __name__ == "__main__":
-#     main()
