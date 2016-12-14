@@ -107,19 +107,72 @@ At this stage I also started thinking about the execution model of the program g
 * Should be able to change the location of a camera while it is active
 * We should be able to restart the camera (without killing the program?)
 
-A first
+A simple approach would be write a simple two-threaded program (which could be implemented as the main method for the file that defines the speed camera class)
+which creates an instance of the _SpeedCamera_ and activates it on a new thread. Then it reads input from the command line, prompting for actions to relocate,
+restart and stop the program.
+A more interesting approach would be to have a camera manager application that would serve as a broker between the user and the cameras and let you operate multiple
+cameras simultaneously on the same terminal. However, the ideal solution would be to decouple the camera manager application from the user issued commands. The camera
+manager would be deployed on a web server and exposed through a server socket. The command-line client would then connect itself to the remote application
+using a client socket and issue commands over the network. This would enable the server and client applications to live on different machines. For instance,
+the camera manager application could be deployed to the virtual machine created in Azure, while the command-line client could be installed in your machine.
+Similar functionality could be achieved using inter-process communication instead.
+My goal was to implement such elegant solution. I implemented a camera manager and a part of a command-line client but with
+still the communication between the two missing, I felt that I would not have enough time to do the main tasks of the coursework, so I rolled
+back to the simplest of approaches.
 
 === Task 2: NoSql Consumer
 
-== Table Storage Design
+The topic defined in _SpeedCamera_ can be subscribed in order to receive messages published by speed cameras.
+We can represent a generic topic subscriber by an object that takes a topic name, a subscription name and optionally a _Rule_.
+This object takes those values to create an Azure subscription and optionally associates a rule with that subscription.
+Just like _SpeedCamera_, an _AzureSubscriber_ can be activated and terminated. So the same execution model
+applies here. While active, it tries to obtain a message from the subscription. If a message is available it is handed
+to an abstract method _onNewMessage_ which child classes must implement. Otherwise, it sleeps for an amount of time
+determined according to an exponential backoff algorithm, which takes in the number of times a message was unavailable.
+Therefore, the time in seconds to sleep at trial _n_ is given by latexmath:[$n = 2^{n} * 0.1$]. This value is capped of
+at 12, where the time to sleep is of 6.66 minutes.
+
+A possible implementation of the generic subscriber is a subscriber that receives the message, maybe do some processing on the information given,
+and later stores that result on an Azure Table. This is exactly the case study that is asked of us in this task. Therefore, we created _PersistentSubscriber_
+as a subclass of _AzureSubscriber_, inheriting all the methods (not all methods needed to inherited but that would require name mangling which is not easy
+to perform without previous experience). An object of this class is additionally given a table name in the constructor, which uses to create the table in Azure Table Storage
+if non existent. At the moment this class connects to the API in rather a hard-coded (and non-safe!!) way, but that could be improved by reading
+a configuration file set with the correct read and write permissions. This class is also abstract and provides an abstract method to be implemented by child classes which
+receive a dictionary as an argument and must return an Azure Table _Entity_. On a new message the _PersistentSubscriber_ will insert the Entity into the table for you.
+It also provides a method for you to query the table given a query string, as well as methods to retrieve or flush an entire partition given the partition key.
+This made building queries for the following tasks, much easier.
+
+We created two child classes of _PersistentSubscriber_:
+
+* _CameraRegister_ - Responsible for processing events of camera activation and deactivation and inserting them into a table.
+* _VehicleRegister_ - Responsible for processing events of vehicle sightings and inserting them into a table.
+
+On each of these classes we defined the Partition and Row Keys, as well as other information we wanted to persist.
+At this point there was a series of design considerations that needed to be taken into account.
+The combination of partition and row key must be unique and these
+should also be chosen in function of the kinds of queries performed. Furthermore,
+more efficient queries are always aware of the value of the Partition Key. These are listed on the following
+https://docs.microsoft.com/en-us/azure/storage/storage-table-design-guide[link].
+
+For both tables, we used an arbitrary string for partition key, representing the underlying event (e.g. 'CameraActivation', 'VehicleSighting'),
+and the timestamp at the moment of the event (with millisecond precision) as the row key. Row key had to be incrementing in nature...............!!!!!!!!!
+Therefore, I made arguably a strong assumption in this
+case: no two cameras or cars are activated/observed at exactly the same time. An assumption which works well, simulation-wise, but might not in reality.
+I also introduced other fields on each case as fit, e.g. vehicle speed, location, etc.
+It was a shame that I could not use nested dictionaries instead of an Azure _Entity_.
 
 In my opinion, one way to better model the problem would have been to
-use a single 'SpeedCamera' Table with different partitions, where each partition
+use a single Table with different partitions, where each partition
 represents a different entity or event relative to the Speed Camera, i.e. activation,
 deactivation, sighting, speeding, etc.
-That way we would use less resources (Table Storage units) and get exactly the same functionality,
+That way we would use less resources (tables) and get exactly the same functionality,
 with better readability, query-wise because the partition key in this case can be something completely
 arbitrary as there is only a single partition per table.
 
-Azure query retrieval limitation: Azure only lets you retrieve up to 1000 entities per query.
-Therefore, applications operating on tables with more than 1000 entities stored, need to
+I also read about the Azure Table query retrieval limitation: Azure only lets you retrieve up to 1000 entities per query.
+Therefore, applications querying on tables with more than 1000 entities stored, need to be adjusted to take that into account (using the *marker* parameter
+in the _TableService.query_entities_ function).
+
+=== Task 3 and 4
+
+Given the
