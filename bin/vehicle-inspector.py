@@ -1,22 +1,23 @@
  #! /usr/bin/env python
 
-from smartcameras.storagehandler import PoliceMonitor
+from smartcameras.subscriber import VehicleInspector
 import threading
 
 def main():
     print("########################################")
     print ""
-    print("Welcome to the Police Monitor!")
+    print("Welcome to the Vehicle Inspector!")
     print ""
     print("########################################")
 
-    policeMonitor = PoliceMonitor()
-    policeMonitor.dump = True
-    thread = threading.Thread(target=policeMonitor.activate)
+    vehicleInspector = VehicleInspector()
+    thread = threading.Thread(target=vehicleInspector.activate)
     thread.daemon = True
     thread.start()
+    while not vehicleInspector.isActive:
+        time.sleep(1)
     print ""
-    print("The Police Monitor has been activated!")
+    print("The Vehicle Inspector has been activated!")
     print ""
 
     while True:
@@ -26,9 +27,9 @@ def main():
             print ""
             break
 
-    policeMonitor.terminate()
+    vehicleInspector.terminate()
     thread.join()
-    print "Police Monitor terminated."
+    print "Vehicle Inspector terminated."
     print "Closing..."
 
 if __name__ == "__main__":

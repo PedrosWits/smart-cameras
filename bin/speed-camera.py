@@ -14,7 +14,7 @@ def main():
     city = raw_input('Please enter the city: ')
     speedLimit = 0
     while speedLimit < 30:
-        speedLimit = raw_input('Please enter the speed limit (>= 30): [50]')
+        speedLimit = raw_input('Please enter the speed limit (>= 30): [50]' )
         if speedLimit == "":
             speedLimit = 50
             break
@@ -22,11 +22,12 @@ def main():
             try:
                 speedLimit = int(speedLimit)
             except ValueError:
+                speedLimit = 0
                 print "FAILED: Value must be an integer!"
 
     rate = 0
     while rate <= 0:
-        rate = raw_input('Please enter the mean num of sightings per second (>0): [5]')
+        rate = raw_input('Please enter the mean num of sightings per second (>0): [5] ')
         if rate == "":
             rate = 5
             break
@@ -34,6 +35,7 @@ def main():
             try:
                 rate = float(rate)
             except ValueError:
+                rate = 0
                 print "FAILED: Value must be a float!"
 
     print("########################################")
@@ -47,6 +49,8 @@ def main():
     thread = threading.Thread(target=camera.activate, args=(speedLimit, rate))
     thread.daemon = True
     thread.start()
+    while not camera.isActive:
+        time.sleep(1)
     print("The camera is now active!")
     print ""
     usage = '''
@@ -63,14 +67,14 @@ def main():
         todo = raw_input("----> ")
         if todo == 'relocate':
             newStreet = raw_input("New street: ")
-            newCity = raw_input("New city: [same]") or None
+            newCity = raw_input("New city: [same] ") or None
             camera.relocate(newStreet, newCity)
             print("Camera relocated! Operating on %s at %s" % (camera.street, camera.city))
 
         elif todo == 'restart':
             newLimit = 0
             while newLimit < 30:
-                newLimit = raw_input('Please enter the speed limit (>= 30): [50]')
+                newLimit = raw_input('Please enter the speed limit (>= 30): [50] ')
                 if newLimit == "":
                     newLimit = 50
                     break
@@ -78,6 +82,7 @@ def main():
                     try:
                         newLimit = int(newLimit)
                     except ValueError:
+                        newLimit = 0
                         print "FAILED: Value must be an integer!"
 
             print "..."

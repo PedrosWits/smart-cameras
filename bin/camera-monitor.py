@@ -2,6 +2,7 @@
 
 from smartcameras.storagehandler import CameraRegister
 import threading
+import time
 
 def main():
     print("########################################")
@@ -15,6 +16,8 @@ def main():
     thread = threading.Thread(target=cameraRegister.activate)
     thread.daemon = True
     thread.start()
+    while not cameraRegister.isActive:
+        time.sleep(1)
     print ""
     print("The Camera Monitor has been activated!")
     print ""
