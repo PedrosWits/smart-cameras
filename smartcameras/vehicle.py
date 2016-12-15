@@ -23,7 +23,7 @@ class NormalVehicle(object):
         mu = maximumSpeed - sigma
         self.speed = np.random.normal(mu, sigma)
         self.isSpeeding = self.speed > maximumSpeed
-        self.isPriority = (1.10 * self.speed) > maximumSpeed
+        self.isPriority = self.speed > (1.10 * maximumSpeed)
 
     def dump(self):
         print("")

@@ -39,15 +39,15 @@ setup(
     tests_require=['pytest'],
     install_requires=['azure>=2.0.0rc6',
                       'pytest-cov>=2.4.0',
-                      'Sphinx>=1.5'],
+                      'numpy>=1.11.2'],
     cmdclass={'test': PyTest},
     author_email='ppintodasilva@gmail.com',
     description='Smart Cameras using Azure',
     long_description=long_description,
-    packages=['smart-cameras'],
+    packages=['smartcameras'],
     include_package_data=True,
     platforms='any',
-    test_suite='smart-cameras.test.test_smart_cameras',
+    test_suite='smartcameras.test',
     classifiers = [
         'Programming Language :: Python',
         'Development Status :: 4 - Beta',
@@ -62,5 +62,7 @@ setup(
         ],
     extras_require={
         'testing': ['pytest'],
-    }
+    },
+    scripts = ['bin/speed-camera.py', 'bin/camera-monitor.py', 'bin/table-operator.py',
+                'bin/police-monitor.py', 'bin/vehicle-inspector.py', 'bin/vehicle-monitor.py']
 )
