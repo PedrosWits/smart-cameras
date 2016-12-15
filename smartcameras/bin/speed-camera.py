@@ -32,9 +32,9 @@ def main():
             break
         else:
             try:
-                rate = int(rate)
+                rate = float(rate)
             except ValueError:
-                print "FAILED: Value must be an integer!"
+                print "FAILED: Value must be a float!"
 
     print("########################################")
     print ""
