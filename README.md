@@ -1,1 +1,1 @@
-# Smart Cities: Speed Cameras#### *CSC8110 - Cloud Computing Coursework @*#### *Newcastle University*----## Pipeline Setup*Pedro Pinto da Silva*
+# Smart Cities: Speed Cameras#### *CSC8110 - Cloud Computing Coursework @*#### *Newcastle University*----## InstallationIn the same directory as this README file, do:*Pedro Pinto da Silva*
