@@ -29,6 +29,7 @@ class PersistentSubscriber(subscriber.AzureSubscriber):
                                   account_key=table_cred['mykey'])
         if not self.table.exists(tableName):
             self.table.create_table(tableName)
+        self.dump = False
 
     # Specify behavior on message received (from subscription).
     # Default is insert entity.
@@ -112,6 +113,7 @@ class CameraRegister(PersistentSubscriber):
     TABLE = "Cameras"
     PARTITION_ACTIVATION = "CameraActivation"
     PARTITION_DEACTIVATION = "CameraDeactivation"
+    partitions = [PARTITION_ACTIVATION, PARTITION_DEACTIVATION]
 
     def __init__(self, table_cred = None):
         rule = Rule()
@@ -141,6 +143,16 @@ class CameraRegister(PersistentSubscriber):
         entity.city = dic['camera']['city']
         entity.speedLimit = dic['camera']['speedLimit']
         entity.rate = dic['camera']['rate']
+        if self.dump:
+            print ""
+            print "Partition Key = %s" % entity.PartitionKey
+            print "Row Key = %s" % entity.RowKey
+            print "Camera Id = %s" % entity.id
+            print "Street = %s" % entity.street
+            print "City = %s" % entity.city
+            print "Speed Limit = %d" % entity.speedLimit
+            print "Rate = %d" % entity.rate
+            print ""
         return entity
 
 ################################################################################
@@ -153,6 +165,7 @@ class CameraRegister(PersistentSubscriber):
 class VehicleRegister(PersistentSubscriber):
     TABLE = "Sightings"
     PARTITION = "VehicleSightings"
+    partitions = [PARTITION]
 
     def __init__(self, table_cred = None):
         rule = Rule()
@@ -168,7 +181,8 @@ class VehicleRegister(PersistentSubscriber):
     # therefore we assume that - no two vehicles go through a camera at exactly the same time
     def dictToEntity(self, dic):
         # Ditionary is nested so we have to un-nest it or else it fails
-        return vehicleToEntity(dic, self.PARTITION)
+        entity = vehicleToEntity(dic, self.PARTITION, self.dump)
+        return entity
 
 ################################################################################
 ################################################################################
@@ -181,6 +195,8 @@ class VehicleRegister(PersistentSubscriber):
 class PoliceMonitor(PersistentSubscriber):
     TABLE = "SpeedingSightings"
     PARTITION = "SpeedingVehicles"
+    partitions = [PARTITION]
+    
     def __init__(self, table_cred = None):
         rule = Rule()
         rule.filter_type = 'SqlFilter'
@@ -199,11 +215,12 @@ class PoliceMonitor(PersistentSubscriber):
     # therefore we assume that - no two vehicles go through a camera at exactly the same time
     def dictToEntity(self, dic):
         # Ditionary is nested so we have to un-nest it or else it fails
-        return vehicleToEntity(dic, self.PARTITION)
+        entity = vehicleToEntity(dic, self.PARTITION, self.dump)
+        return entity
 
 
 # Helping function
-def vehicleToEntity(dic, partitionKey):
+def vehicleToEntity(dic, partitionKey, dump = False):
     entity = Entity()
     entity.PartitionKey = partitionKey
     entity.RowKey = str(dic['timestamp'])
@@ -217,4 +234,21 @@ def vehicleToEntity(dic, partitionKey):
     entity.speed = dic['vehicle']['speed']
     entity.isSpeeding = dic['vehicle']['isSpeeding']
     entity.isPriority = dic['vehicle']['isPriority']
+    if dump:
+        print ""
+        print "Partition Key = %s" % entity.PartitionKey
+        print "Row Key = %s" % entity.RowKey
+        print "Camera:"
+        print "  Id = %s" % entity.camera
+        print "  Street = %s" % entity.street
+        print "  City = %s" % entity.city
+        print "  Speed Limit = %d" % entity.speedLimit
+        print "  Last Activation = %s" % entity.camera_activation
+        print "Vehicle:"
+        print "  Plate = %s" % entity.plate
+        print "  Type = %s" % entity.type
+        print "  Speed = %s" % str(entity.speed)
+        print "  Speeding = %s" % entity.isSpeeding
+        print "  Priority = %s" % entity.isPriority
+        print ""
     return entity
